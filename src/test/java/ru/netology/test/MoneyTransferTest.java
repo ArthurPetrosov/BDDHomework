@@ -1,112 +1,69 @@
 package ru.netology.test;
 
-import com.codeborne.selenide.Configuration;
+import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.netology.data.DataHelper;
 import ru.netology.page.DashboardPage;
 import ru.netology.page.LoginPage;
-import lombok.var;
 
 import static com.codeborne.selenide.Selenide.open;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+
 class MoneyTransferTest {
 
-    private DashboardPage dashboardPage;
-
     @BeforeEach
-    void logIn() {
-        Configuration.holdBrowserOpen = true;
-        var loginPage = open("http://localhost:9999", LoginPage.class);
-        var authInfo = DataHelper.getAuthInfo();
-        var verificationPage = loginPage.validLogin(authInfo);
-        var verificationCode = DataHelper.getVerificationCodeFor(authInfo);
-        dashboardPage = verificationPage.validVerify(verificationCode);
+    public void openPage() {
+
+        open("http://localhost:9999");
+
+        val loginPage = new LoginPage();
+        val authInfo = DataHelper.getAuthInfo();
+        val verificationPage = loginPage.validLogin(authInfo);
+        val verificationCode = DataHelper.getVerificationCodeFor(authInfo);
+        verificationPage.validVerify(verificationCode);
+    }
+
+
+    @Test
+    void shouldTransferMoneyBetweenOwnCards1() {
+
+        val dashboardPage = new DashboardPage();
+
+        int balanceFirstCard = dashboardPage.getFirstCardBalance();
+        int balanceSecondCard = dashboardPage.getSecondCardBalance();
+        val moneyTransfer = dashboardPage.firstCardButton();
+        val infoCard = DataHelper.getSecondCardNumber();
+        String sum = "1000";
+        moneyTransfer.transferForm(sum, infoCard);
+
+        assertEquals(balanceFirstCard + Integer.parseInt(sum), dashboardPage.getFirstCardBalance());
+        assertEquals(balanceSecondCard - Integer.parseInt(sum), dashboardPage.getSecondCardBalance());
     }
 
     @Test
-    void shouldTransferMoneyFromSecondCardToFirstByNormalSum() {
+    void shouldTransferMoneyBetweenOwnCards2() {
 
-        int beforeBalanceFirstCard = dashboardPage.getCardBalance(DataHelper.getFirstCardInfo().getCardId());
-        int beforeBalanceSecondCard = dashboardPage.getCardBalance(DataHelper.getSecondCardInfo().getCardId());
+        val dashboardPage = new DashboardPage();
 
-        var transferPage = dashboardPage.topUpBalance(DataHelper.getFirstCardInfo().getCardId());
-        var transferFromSecondCardToFirst = DataHelper.getSecondCardInfo();
-        int sum = 1_500;
-        dashboardPage = transferPage.transfer(transferFromSecondCardToFirst, sum);
-        var balanceFirstCard = DataHelper.newBalanceCardPlus(beforeBalanceFirstCard, sum);
-        var balanceSecondCard = DataHelper.newBalanceCardMinus(beforeBalanceSecondCard, sum);
+        int balanceFirstCard = dashboardPage.getFirstCardBalance();
+        int balanceSecondCard = dashboardPage.getSecondCardBalance();
+        val moneyTransfer = dashboardPage.secondCardButton();
+        val infoCard = DataHelper.getFirstCardNumber();
+        String sum = "1500";
+        moneyTransfer.transferForm(sum, infoCard);
 
-        assertEquals(balanceFirstCard, dashboardPage.getCardBalance(DataHelper.getFirstCardInfo().getCardId()));
-        assertEquals(balanceSecondCard, dashboardPage.getCardBalance(DataHelper.getSecondCardInfo().getCardId()));
+        assertEquals(balanceFirstCard - Integer.parseInt(sum), dashboardPage.getFirstCardBalance());
+        assertEquals(balanceSecondCard + Integer.parseInt(sum), dashboardPage.getSecondCardBalance());
     }
 
     @Test
-    void shouldTransferMoneyFromSecondCardToFirstByOverSum() {
+    void shouldCancellationOfMoneyTransfer() {
 
-        int beforeBalanceFirstCard = dashboardPage.getCardBalance(DataHelper.getFirstCardInfo().getCardId());
-        int beforeBalanceSecondCard = dashboardPage.getCardBalance(DataHelper.getSecondCardInfo().getCardId());
+        val dashboardPage = new DashboardPage();
 
-        var transferPage = dashboardPage.topUpBalance(DataHelper.getFirstCardInfo().getCardId());
-        var transferFromSecondCardToFirst = DataHelper.getSecondCardInfo();
-        int sum = 12_000;
-        dashboardPage = transferPage.transfer(transferFromSecondCardToFirst, sum);
-        var balanceFirstCard = DataHelper.newBalanceCardPlus(beforeBalanceFirstCard, sum);
-        var balanceSecondCard = DataHelper.newBalanceCardMinus(beforeBalanceSecondCard, sum);
-
-        assertEquals(balanceFirstCard, dashboardPage.getCardBalance(DataHelper.getFirstCardInfo().getCardId()));
-        assertEquals(balanceSecondCard, dashboardPage.getCardBalance(DataHelper.getSecondCardInfo().getCardId()));
-    }
-
-    @Test
-    void shouldTransferMoneyFromFirstCardToSecondByOverSum() {
-
-        int beforeBalanceFirstCard = dashboardPage.getCardBalance(DataHelper.getFirstCardInfo().getCardId());
-        int beforeBalanceSecondCard = dashboardPage.getCardBalance(DataHelper.getSecondCardInfo().getCardId());
-
-        var transferPage = dashboardPage.topUpBalance(DataHelper.getSecondCardInfo().getCardId());
-        var transferFromFirstCardToSecond = DataHelper.getFirstCardInfo();
-        int sum = 12_000;
-        dashboardPage = transferPage.transfer(transferFromFirstCardToSecond, sum);
-        var balanceFirstCard = DataHelper.newBalanceCardMinus(beforeBalanceFirstCard, sum);
-        var balanceSecondCard = DataHelper.newBalanceCardPlus(beforeBalanceSecondCard, sum);
-
-        assertEquals(balanceFirstCard, dashboardPage.getCardBalance(DataHelper.getFirstCardInfo().getCardId()));
-        assertEquals(balanceSecondCard, dashboardPage.getCardBalance(DataHelper.getSecondCardInfo().getCardId()));
-    }
-
-    @Test
-    void shouldTransferMoneyFromFirstCardToSecondByNormalSum() {
-
-        int beforeBalanceFirstCard = dashboardPage.getCardBalance(DataHelper.getFirstCardInfo().getCardId());
-        int beforeBalanceSecondCard = dashboardPage.getCardBalance(DataHelper.getSecondCardInfo().getCardId());
-
-        var transferPage = dashboardPage.topUpBalance(DataHelper.getSecondCardInfo().getCardId());
-        var transferFromFirstCardToSecond = DataHelper.getFirstCardInfo();
-        int sum = 3_500;
-        dashboardPage = transferPage.transfer(transferFromFirstCardToSecond, sum);
-        var balanceFirstCard = DataHelper.newBalanceCardMinus(beforeBalanceFirstCard, sum);
-        var balanceSecondCard = DataHelper.newBalanceCardPlus(beforeBalanceSecondCard, sum);
-
-        assertEquals(balanceFirstCard, dashboardPage.getCardBalance(DataHelper.getFirstCardInfo().getCardId()));
-        assertEquals(balanceSecondCard, dashboardPage.getCardBalance(DataHelper.getSecondCardInfo().getCardId()));
-    }
-
-    @Test
-    void shouldTransferMoneyFromFirstCardToSecondByZero() {
-
-        int beforeBalanceFirstCard = dashboardPage.getCardBalance(DataHelper.getFirstCardInfo().getCardId());
-        int beforeBalanceSecondCard = dashboardPage.getCardBalance(DataHelper.getSecondCardInfo().getCardId());
-
-        var transferPage = dashboardPage.topUpBalance(DataHelper.getSecondCardInfo().getCardId());
-        var transferFromFirstCardToSecond = DataHelper.getFirstCardInfo();
-        int sum = 0;
-        dashboardPage = transferPage.transfer(transferFromFirstCardToSecond, sum);
-        var balanceFirstCard = DataHelper.newBalanceCardMinus(beforeBalanceFirstCard, sum);
-        var balanceSecondCard = DataHelper.newBalanceCardPlus(beforeBalanceSecondCard, sum);
-
-        assertEquals(balanceFirstCard, dashboardPage.getCardBalance(DataHelper.getFirstCardInfo().getCardId()));
-        assertEquals(balanceSecondCard, dashboardPage.getCardBalance(DataHelper.getSecondCardInfo().getCardId()));
+        val moneyTransfer = dashboardPage.firstCardButton();
+        moneyTransfer.cancelButton();
     }
 }
